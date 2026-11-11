@@ -1132,6 +1132,17 @@ function cardHtml(r,i,top){
   </article>`;
 }
 function renderSwipe(){
+  if(togOn()){ /* Swipe together: today's shared 28, no filters */
+    const vt=$('#view-swipe'); ensureTog(); const left=togLeft().map(getRecipe).filter(Boolean);
+    vt.innerHTML=togHeader()+(left.length?`<div class="deck" id="deck">${left.slice(0,3).map((r,i)=>cardHtml(r,i,i===0)).reverse().join('')}</div>
+    <div class="actions">
+      <button class="act sm" data-act="undo" aria-label="Undo last swipe">${ICON.undo}</button>
+      <button class="act lg skip" data-act="skip" aria-label="Not for me">${ICON.x}</button>
+      <button class="act lg pick" data-act="pick" aria-label="I'd eat this">${ICON.heart}</button>
+      <button class="act sm" data-act="info" aria-label="Show recipe">${ICON.info}</button>
+    </div>`:togDoneHtml());
+    const tt=$('#deck .card.top'); if(tt) bindDrag(tt); return;
+  }
   const v=$('#view-swipe'), W=state.week, target=state.settings.dinners, picked=W.picks.length, d=deck(), f=state.filters;
   const n=Math.max(target,picked);
   let dots=''; for(let i=0;i<n;i++) dots+=`<span class="dot${i<picked?' on':''}"></span>`;
@@ -1181,12 +1192,14 @@ function decide(dir){
   setTimeout(()=>{busy=false;applyDecision(id,dir);},reduced()?0:240);
 }
 function applyDecision(id,dir){
+  if(togOn()){const T=state.tog; T.dec[id]=dir; T.hist.push(id); T.matches=null; save(); renderSwipe(); if(!togLeft().length) toast(`All ${TOG_N} done. Swap codes!`); return;}
   const W=state.week; W.decided[id]=dir; W.history.push(id); W.front=W.front.filter(x=>x!==id);
   if(dir==='R'&&!getPick(id)) W.picks.push({id,servings:state.settings.servings});
   save(); renderSwipe(); renderNav();
   if(dir==='R'&&W.picks.length===state.settings.dinners) doneSheet();
 }
 function undo(){
+  if(togOn()){const T=state.tog, tid=T.hist.pop(); if(!tid){toast('Nothing to undo');return;} delete T.dec[tid]; T.matches=null; save(); renderSwipe(); toast('Brought it back'); return;}
   const W=state.week, id=W.history.pop(); if(!id){toast('Nothing to undo');return;}
   if(W.decided[id]==='R') W.picks=W.picks.filter(p=>p.id!==id);
   delete W.decided[id]; W.front.unshift(id); save(); renderSwipe(); renderNav(); toast('Brought it back');
@@ -1375,7 +1388,7 @@ function openRecipe(id,from){
     <ul class="ing-list">${r.i.map(([iid,q])=>{const g=getIng(iid);return `<li><span class="q">${esc(fmtQty(q*f,g.unit))}</span><span>${esc(g.name)}${g.staple?' <span class="cup">(cupboard)</span>':''}${state.useUp.ids.includes(iid)?' <span class="pill">Using up</span>':''}</span></li>`;}).join('')}</ul>
     <p class="small muted" style="margin-top:-6px">Plus salt and pepper. Calories are estimated from typical ingredient values for one of ${r.s} servings${rmeta(r).kcalUnknown?' (some ingredients have no calorie value yet, so the real figure is higher)':''}. A guide only, not nutrition advice.</p>
     ${r.st&&r.st.length?`<div class="section-title">Method</div><ol class="method">${r.st.map(s=>`<li><span>${esc(s)}</span></li>`).join('')}</ol>`:''}
-    ${from==='deck'&&!state.week.decided[id]?`<div class="row"><button class="btn" data-act="dskip">Skip</button><button class="btn primary" data-act="dpick">Pick this dinner</button></div>`
+    ${from==='deck'&&(togOn()?!state.tog.dec[id]:!state.week.decided[id])?`<div class="row"><button class="btn" data-act="dskip">${togOn()?'Not for me':'Skip'}</button><button class="btn primary" data-act="dpick">${togOn()?'I’d eat this':'Pick this dinner'}</button></div>`
       :p?`<button class="btn block" data-act="unpick" data-id="${esc(id)}" data-close="1">Remove from this week</button>`
       :`<button class="btn primary block" data-act="addpick" data-id="${esc(id)}" data-close="1">Add to this week</button>`}
     ${r.own?`<div class="row"><button class="btn sm" data-act="editrecipe" data-id="${esc(id)}">Edit</button><button class="btn sm" data-act="exportone" data-id="${esc(id)}">Copy recipe code</button><button class="btn sm" data-act="delrecipe" data-id="${esc(id)}">Delete</button></div>`:''}`;
@@ -1880,32 +1893,50 @@ function optimiseSheet(){
   openSheet(draw(),{onMount:bind,ctx:{redraw:()=>sheetRedraw(draw,bind)}});
 }
 
-/* ---- Swipe together ---- */
-function myLikes(){const W=state.week; return [...new Set([...Object.keys(W.decided).filter(k=>W.decided[k]==='R'),...W.picks.map(p=>p.id)])].filter(id=>getRecipe(id));}
-function likesCode(){return 'DS1-'+btoa(JSON.stringify({l:myLikes()}));}
-function readCode(txt){const m=String(txt||'').match(/DS1-([A-Za-z0-9+/=]+)/); if(!m) return null; try{const o=JSON.parse(atob(m[1])); return Array.isArray(o.l)?o.l.filter(x=>typeof x==='string'&&getRecipe(x)):null;}catch(e){return null;}}
-let togRes=null;
-function togetherSheet(){
-  const draw=()=>{const mine=myLikes();
-    return `<h2>Swipe together</h2>
-    <p class="small muted">Both of you swipe on your own phones, then swap codes. The app shows only the dinners you <b>both</b> liked. Nothing goes through a server.</p>
+/* ---- Swipe together ----
+   Everyone gets the same 28 built-in dinners each day (picked from the date, so phones agree without
+   talking to each other). Each person swipes all 28, then they swap short codes to see what they both liked. */
+const TOG_N=28;
+function dayKey(d){d=d||new Date(); return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');}
+function seededRng(seed){let a=seed>>>0; return ()=>{a=(a+0x6D2B79F5)>>>0; let t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296;};}
+function togSet(key){const ids=BUILT.map(r=>r.id), rnd=seededRng(hash('tog:'+key)); for(let i=ids.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1)); [ids[i],ids[j]]=[ids[j],ids[i]];} return ids.slice(0,TOG_N);}
+function togOn(){return !!(state.tog&&state.tog.active);}
+function ensureTog(){const key=dayKey(); if(!state.tog||state.tog.key!==key) state.tog={active:!!(state.tog&&state.tog.active),key,ids:togSet(key),dec:{},hist:[],matches:null,theirs:0};}
+function togLeft(){return state.tog.ids.filter(id=>!state.tog.dec[id]);}
+function togLikes(){return state.tog.ids.filter(id=>state.tog.dec[id]==='R');}
+function togCheck(ids){return hash(ids.join(',')).toString(36).slice(0,4);}
+function togCode(){const T=state.tog; let bits=0; T.ids.forEach((id,i)=>{if(T.dec[id]==='R') bits+=2**i;}); return `DS2-${T.key}-${togCheck(T.ids)}-${bits.toString(36)}`;}
+function readTogCode(txt){
+  const m=String(txt||'').match(/DS2-(\d{8})-([a-z0-9]{1,4})-([a-z0-9]+)/i); if(!m) return {err:'That doesn’t look like a Swipe together code. Paste the whole thing, starting DS2-.'};
+  const T=state.tog; if(m[1]!==T.key){const d=m[1]; return {err:`That code is for ${+d.slice(6)} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+d.slice(4,6)-1]}. You both need to swipe the same day’s 28 dinners. Ask for today’s code.`};}
+  if(m[2].toLowerCase()!==togCheck(T.ids)) return {err:'Your apps have different recipe lists. Make sure you’re both on the latest version, then swipe again.'};
+  const bits=parseInt(m[3],36); if(!(bits>=0)) return {err:'That code is damaged. Copy it again.'};
+  return {likes:T.ids.filter((id,i)=>Math.floor(bits/2**i)%2===1)};
+}
+function startTogether(){ensureTog(); state.tog.active=true; save(); closeSheet(); setTab('swipe');}
+function togHeader(){const T=state.tog, done=TOG_N-togLeft().length;
+  return `<div class="tog-strip"><div style="min-width:0"><b>Swipe together</b><div class="small muted num">${done} of ${TOG_N} · the same ${TOG_N} dinners for everyone today</div></div><button class="btn sm" data-act="togexit">Exit</button></div>
+    <div class="ck-bar"><i style="width:${Math.round(done/TOG_N*100)}%"></i></div>`;}
+function togDoneHtml(){const T=state.tog, mine=togLikes();
+  return `<div class="tog-done">
+    <h2>All ${TOG_N} swiped</h2><p class="muted">You liked ${mine.length}. Send your code and paste theirs once they’ve swiped all ${TOG_N} too.</p>
     <div class="panel" style="display:flex;flex-direction:column;gap:10px">
-      <b>1. Send your likes</b><p class="small muted" style="margin:0">You\u2019ve liked ${mine.length} dinner${mine.length===1?'':'s'} this week.${mine.length?'':' Swipe some first.'}</p>
-      <div class="row"><button class="btn" data-act="togcopy" ${mine.length?'':'disabled'}>Copy my code</button>${canShare()?`<button class="btn" data-act="togshare" ${mine.length?'':'disabled'}>Share my code</button>`:''}</div>
+      <b>1. Send your code</b><code class="tog-code num">${esc(togCode())}</code>
+      <div class="row"><button class="btn" data-act="togcopy">Copy my code</button>${canShare()?'<button class="btn" data-act="togshare">Share my code</button>':''}</div>
       <textarea id="tog-mycode" class="inp code" hidden readonly aria-label="Your code"></textarea>
     </div>
     <div class="panel" style="display:flex;flex-direction:column;gap:10px">
       <b>2. Paste their code</b>
-      <textarea id="tog-code" class="inp code" style="min-height:80px" placeholder="DS1-..." aria-label="Their code"></textarea>
+      <textarea id="tog-code" class="inp code" style="min-height:70px" placeholder="DS2-..." aria-label="Their code"></textarea>
       <div id="tog-err" class="err" role="alert"></div>
       <button class="btn primary" data-act="togfind">Find our matches</button>
     </div>
-    ${togRes?`<div class="section-title">You both liked · ${togRes.matches.length}</div>
-      ${togRes.matches.length?togRes.matches.map(id=>{const r=getRecipe(id);return `<button class="rec" data-act="open" data-id="${esc(id)}">${tileHtml(r)}<div style="min-width:0"><div class="rec-name">${esc(r.n)}</div><div class="rec-meta num">${r.m} min · ${esc(kcalText(r))}</div></div>${getPick(id)?'<span class="pill">This week</span>':'<span></span>'}</button>`;}).join('')
+    ${T.matches?`<div class="section-title">You both liked · ${T.matches.length}</div>
+      ${T.matches.length?T.matches.map(id=>{const r=getRecipe(id);return `<button class="rec" data-act="open" data-id="${esc(id)}">${tileHtml(r)}<div style="min-width:0"><div class="rec-name">${esc(r.n)}</div><div class="rec-meta num">${r.m} min · ${esc(kcalText(r))} · ${esc(carbText(r))}</div></div>${getPick(id)?'<span class="pill">This week</span>':'<span></span>'}</button>`;}).join('')
         +`<div class="row"><button class="btn primary" data-act="toguse">Make these this week</button><button class="btn" data-act="togadd">Add to this week</button></div>`
-        :`<p class="small muted">No matches yet. They liked ${togRes.theirs} dinner${togRes.theirs===1?'':'s'}. Keep swiping and swap codes again.</p>`}`:''}`;};
-  openSheet(draw(),{ctx:{redraw:()=>sheetRedraw(draw)}});
-}
+        :`<p class="small muted">No dinners in common today. They liked ${T.theirs}, you liked ${mine.length}. Try again tomorrow’s 28, or swipe the normal deck.</p>`}`:''}
+    <div class="row"><button class="btn ghost" data-act="togredo">Swipe today’s ${TOG_N} again</button><button class="btn ghost" data-act="togexit">Back to my deck</button></div>
+  </div>`;}
 
 /* ---- iPhone hand-offs: Reminders and Calendar ---- */
 function remindersText(){const L=buildList(), W=state.week;
@@ -2052,13 +2083,16 @@ document.addEventListener('click',e=>{
         setTimeout(()=>{optRes=runOptimiser(optN,state.settings.budget,optKeep?state.week.picks.filter(p=>getRecipe(p.id)):[]); sheetCtx&&sheetCtx.redraw();},30); break;}
       case 'optuse': if(optRes){const W=state.week, keep=optKeep?W.picks:[]; W.picks=optRes.ids.map(rid=>keep.find(p=>p.id===rid)||{id:rid,servings:state.settings.servings}); W.picks.forEach(p=>W.decided[p.id]='R'); save(); closeSheet(); setTab('plan'); autoArrangeDays(); toast('Week planned');} break;
       /* swipe together */
-      case 'together': togRes=null; togetherSheet(); break;
-      case 'togcopy': copyText('Dinner Swipe code: '+likesCode(),'tog-mycode'); break;
-      case 'togshare': navigator.share({title:'Dinner Swipe',text:'My Dinner Swipe likes: '+likesCode()}).catch(()=>{}); break;
-      case 'togfind': {const theirs=readCode(($('#tog-code')||{}).value); if(!theirs){$('#tog-err').textContent='That doesn’t look like a Dinner Swipe code. Paste the whole thing, starting DS1-.'; break;}
-        const mine=new Set(myLikes()); togRes={matches:theirs.filter(x=>mine.has(x)),theirs:theirs.length}; sheetCtx&&sheetCtx.redraw(); break;}
-      case 'toguse': if(togRes){const W=state.week; W.picks=togRes.matches.map(rid=>getPick(rid)||{id:rid,servings:state.settings.servings}); W.picks.forEach(p=>W.decided[p.id]='R'); save(); closeSheet(); setTab('plan'); toast('Matches are this week’s dinners');} break;
-      case 'togadd': if(togRes){togRes.matches.forEach(rid=>{if(!getPick(rid)){state.week.picks.push({id:rid,servings:state.settings.servings}); state.week.decided[rid]='R';}}); save(); closeSheet(); setTab('plan'); toast('Matches added');} break;
+      case 'together': startTogether(); break;
+      case 'togexit': if(state.tog) state.tog.active=false; save(); renderSwipe(); break;
+      case 'togredo': confirmSheet(`Swipe today’s ${TOG_N} again?`,'Your swipes and code for today are cleared so you can start over.','Start again',()=>{const T=state.tog; T.dec={}; T.hist=[]; T.matches=null; save(); renderSwipe();}); break;
+      case 'togcopy': if(togOn()&&!togLeft().length) copyText(`My Dinner Swipe code for today: ${togCode()}`,'tog-mycode'); break;
+      case 'togshare': if(togOn()&&!togLeft().length) navigator.share({title:'Dinner Swipe',text:`My Dinner Swipe code for today: ${togCode()}`}).catch(()=>{}); break;
+      case 'togfind': {if(!togOn()||togLeft().length) break; const res=readTogCode(($('#tog-code')||{}).value); const errEl=$('#tog-err');
+        if(res.err){if(errEl) errEl.textContent=res.err; break;}
+        const mine=new Set(togLikes()); state.tog.matches=res.likes.filter(x=>mine.has(x)); state.tog.theirs=res.likes.length; save(); renderSwipe(); break;}
+      case 'toguse': if(state.tog&&state.tog.matches&&state.tog.matches.length){const W=state.week; W.picks=state.tog.matches.map(rid=>getPick(rid)||{id:rid,servings:state.settings.servings}); W.picks.forEach(p=>W.decided[p.id]='R'); state.tog.active=false; save(); setTab('plan'); toast('Your matches are this week’s dinners');} break;
+      case 'togadd': if(state.tog&&state.tog.matches){state.tog.matches.forEach(rid=>{if(!getPick(rid)){state.week.picks.push({id:rid,servings:state.settings.servings}); state.week.decided[rid]='R';}}); state.tog.active=false; save(); setTab('plan'); toast('Matches added to this week');} break;
       /* hand-offs */
       case 'reminders': remindersSheet(); break;
       case 'remcopy': copyText(remindersText(),'rem-text'); break;

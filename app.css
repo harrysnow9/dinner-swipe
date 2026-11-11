@@ -126,6 +126,11 @@ main{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-web
 .chip .cnt{font-weight:500;opacity:.6;font-size:12px}
 .chip.rep{background:var(--warn-soft);color:var(--warn);border-color:var(--warn-soft)}
 .chip.locked{opacity:.55}
+.tog-strip{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--accent-soft);border-radius:var(--r-md);padding:10px 12px}
+.tog-done{display:flex;flex-direction:column;gap:14px;padding-bottom:8px}
+.tog-done h2{font-size:24px}
+.tog-code{display:block;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;background:var(--surface-2);border-radius:var(--r-sm);padding:10px 12px;word-break:break-all;user-select:all;-webkit-user-select:all}
+#view-swipe .tog-done{overflow-y:auto;flex:1;min-height:0}
 .season-tag{background:var(--accent-soft)!important;color:var(--accent)!important}
 .fav-tag{position:absolute;left:14px;bottom:12px;background:var(--surface);color:var(--warn);border-radius:999px;padding:2px 9px;font-size:13px;letter-spacing:1px}
 .season-note{color:var(--accent);font-weight:600;margin:-4px 0 0}
