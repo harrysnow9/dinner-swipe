@@ -1,7 +1,7 @@
 {
   "name": "Dinner Swipe",
   "short_name": "Dinner Swipe",
-  "description": "Swipe through dinners, plan your week and get a Sainsbury's shopping list.",
+  "description": "Swipe through dinners, plan your week and get a supermarket shopping list.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -21,8 +21,8 @@
     },
     {
       "sizes": "512x512",
-      "purpose": "maskable",
       "type": "image/png",
+      "purpose": "maskable",
       "src": "icons/icon-maskable-512.png"
     }
   ]

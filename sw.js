@@ -1,10 +1,10 @@
-// Dinner Swipe service worker, version 20261111083130
+// Dinner Swipe service worker, version 20261111094854
 // Pages and code: network first (so updates arrive), falling back to the saved copy when offline.
 // Photos and fonts: saved copy first (they never change), fetched once and kept.
 // Only same-site GET requests are handled; nothing is ever sent anywhere else.
-const CORE_CACHE = 'ds-core-20261111083130';
+const CORE_CACHE = 'ds-core-20261111094854';
 const MEDIA_CACHE = 'ds-media-v1';
-const CORE = ['./', './index.html', './app.css?v=20261111083130', './app.js?v=20261111083130', './manifest.webmanifest', './icons/icon-192.png', './icons/apple-touch-icon.png'];
+const CORE = ['./', './index.html', './app.css?v=20261111094854', './app.js?v=20261111094854', './manifest.webmanifest', './icons/icon-192.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CORE_CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
