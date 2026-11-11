@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#F1F5EE" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1511" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Dinner Swipe">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Dinner Swipe</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="stylesheet" href="app.css?v=20261111083130">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+<div id="app">
+  <header class="appbar">
+    <div class="brand">
+      <h1>Dinner<span>Swipe</span></h1>
+      <p id="week-label" class="num">This week</p>
+    </div>
+    <button class="icon-btn" data-act="settings" aria-label="Settings">
+      <svg class="i" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+    </button>
+  </header>
+  <main id="main">
+    <section class="view" id="view-swipe" aria-label="Swipe dinners"></section>
+    <section class="view" id="view-plan" aria-label="This week's dinners" hidden></section>
+    <section class="view" id="view-list" aria-label="Shopping list" hidden></section>
+    <section class="view" id="view-recipes" aria-label="All recipes" hidden></section>
+  </main>
+  <nav class="tabs" aria-label="Sections">
+    <button class="tab" data-tab="swipe"><svg class="i" viewBox="0 0 24 24"><rect x="6" y="3.5" width="12" height="17" rx="2.5"/><path d="M2.5 7v10M21.5 7v10"/></svg>Swipe</button>
+    <button class="tab" data-tab="plan"><svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8.5 3v4M15.5 3v4"/></svg>This week<span class="badge" id="badge-plan" hidden></span></button>
+    <button class="tab" data-tab="list"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 9h17l-1.7 10.5a1.5 1.5 0 0 1-1.5 1.2H6.7a1.5 1.5 0 0 1-1.5-1.2z"/><path d="M8 9l4-5.5L16 9M9.5 13v4M14.5 13v4"/></svg>Shopping<span class="badge" id="badge-list" hidden></span></button>
+    <button class="tab" data-tab="recipes"><svg class="i" viewBox="0 0 24 24"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 2h12v-4M9 7.5h6"/></svg>Recipes</button>
+  </nav>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="scrim" data-act="close"></div>
+  <div class="sheet-panel" id="sheet-panel" role="dialog" aria-modal="true" tabindex="-1">
+    <div class="grab" aria-hidden="true"></div>
+    <button class="icon-btn sheet-close" data-act="close" aria-label="Close"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="sheet-body" id="sheet-body"></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<datalist id="ing-names"></datalist>
+<script src="app.js?v=20261111083130"></script>
+</body>
+</html>
