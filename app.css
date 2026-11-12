@@ -340,6 +340,49 @@ textarea.code{min-height:150px;font-family:ui-monospace,Menlo,Consolas,monospace
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom, 0px));transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:60;max-width:calc(100% - 32px);text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
+/* Swaps, leftovers, shop mode, spending */
+.ing-list li.has-swap{grid-template-columns:84px 1fr auto;align-items:center}
+.swap-btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.swap-btn.on{background:var(--accent-soft);border-color:var(--accent-soft);color:var(--accent)}
+.was{font-size:12px;color:var(--muted);display:block}
+.swap-opt{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:12px 14px}
+.swap-opt[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.swap-opt b{display:block}
+.swap-list{display:flex;flex-direction:column;gap:8px}
+.meal.left{grid-template-columns:44px 1fr auto;background:transparent;border-style:dashed}
+.meal.left .tile{width:44px;height:44px;font-size:22px;opacity:.8}
+.sw-line{font-size:12px;color:var(--accent);font-weight:600}
+.lday{display:flex;align-items:center;gap:6px}
+.shop .ck-body{gap:10px}
+.sh-sum{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px}
+.sh-sum .big{font-family:var(--f-display);font-size:28px;font-weight:800;line-height:1}
+.sh-aisle h3{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:6px 2px 6px;display:flex;justify-content:space-between}
+.sh-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:stretch;margin-bottom:8px}
+.sh-item{display:flex;gap:14px;align-items:center;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-md);padding:14px;min-height:64px}
+.sh-item .ck-box{width:34px;height:34px;border-radius:9px;font-size:20px}
+.sh-item b{display:block;font-size:18px;line-height:1.2}
+.sh-item span.small{display:block}
+.sh-item[aria-pressed="true"]{opacity:.5}
+.sh-item[aria-pressed="true"] b{text-decoration:line-through}
+.sh-item[aria-pressed="true"] .ck-box{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.sh-price{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-md);padding:0 12px;font-weight:800;font-size:16px;min-width:76px;font-variant-numeric:tabular-nums}
+.sh-edit{display:flex;gap:8px;grid-column:1/-1;align-items:center}
+.sh-edit input{flex:1}
+.sh-order{display:flex;flex-direction:column;gap:6px}
+.sh-order div{display:flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:6px 6px 6px 12px}
+.sh-order span{flex:1;font-weight:600}
+.spend-chart{width:100%;height:auto;display:block}
+.spend-chart .bar-a{fill:var(--accent)}
+.spend-chart .bar-a.over{fill:var(--over)}
+.spend-chart .est{stroke:var(--ink);stroke-width:2.5}
+.spend-chart .bud{stroke:var(--warn);stroke-width:1.5;stroke-dasharray:5 4}
+.spend-chart text{fill:var(--muted);font-size:10px;font-family:var(--f-body)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.spend-row{display:grid;grid-template-columns:1fr 110px;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
+.spend-row:first-of-type{border-top:0}
+.from-line{font-size:12px;color:var(--muted);font-style:italic}
+
 @media (max-height:640px){ .card-body h2{font-size:21px} .card-body p{-webkit-line-clamp:1} .act.lg{width:58px;height:58px} .deck{min-height:260px} }
 @media (prefers-reduced-motion: reduce){ *{transition-duration:.01ms!important;animation-duration:.01ms!important} }
 
